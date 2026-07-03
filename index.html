@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kansallispuistot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div id="root" class="kp-root">
+
+  <div class="kp-topbar">
+    <button id="drawerToggle" class="kp-iconbtn" aria-label="Valikko">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="kp-topbar-title">
+      <svg width="22" height="22" viewBox="0 0 30 30" aria-hidden="true" class="kp-logo">
+        <polygon points="15,3 22,15 8,15" fill="var(--accent)"></polygon>
+        <polygon points="15,10 24,24 6,24" fill="var(--accent)"></polygon>
+        <rect x="13.5" y="23" width="3" height="5" fill="#8a6d4b"></rect>
+      </svg>
+      <span>Kansallispuistot</span>
+    </div>
+    <div class="kp-topbar-count">
+      <span class="kp-dot"></span>
+      <span id="topbarVisited">0</span>
+      <span class="kp-sub">/ <span id="topbarTotal">0</span></span>
+    </div>
+  </div>
+
+  <div id="backdrop" class="kp-backdrop"></div>
+
+  <aside id="aside" class="kp-aside">
+    <div class="kp-aside-head">
+      <div class="kp-brand">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+          <polygon points="15,3 22,15 8,15" fill="var(--accent)"></polygon>
+          <polygon points="15,10 24,24 6,24" fill="var(--accent)"></polygon>
+          <rect x="13.5" y="23" width="3" height="5" fill="#8a6d4b"></rect>
+        </svg>
+        <div>
+          <div class="kp-title">Kansallispuistot</div>
+          <div class="kp-subtitle">Retkeilypassi &middot; Suomi</div>
+        </div>
+      </div>
+
+      <div id="authBox"></div>
+    </div>
+
+    <div class="kp-stats-wrap">
+      <div class="kp-stats">
+        <div class="kp-stats-row">
+          <span id="statVisited" class="kp-stats-num">0</span>
+          <span class="kp-stats-total">/ <span id="statTotal">0</span> k&auml;yty</span>
+          <span id="statPct" class="kp-stats-pct">0%</span>
+        </div>
+        <div class="kp-progress">
+          <div id="progressBar" class="kp-progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kp-controls">
+      <input id="searchInput" class="kp-search" placeholder="Etsi puistoa&hellip;">
+      <div class="kp-chips">
+        <button class="kp-chip" data-filter="all">Kaikki</button>
+        <button class="kp-chip" data-filter="visited">K&auml;ydyt</button>
+        <button class="kp-chip" data-filter="unvisited">K&auml;ym&auml;tt&auml;</button>
+      </div>
+    </div>
+
+    <div id="parkList" class="kp-scroll kp-list"></div>
+
+    <div id="asideFoot" class="kp-asidefoot">
+      <div class="kp-swatches" id="swatchesFoot"></div>
+      <div class="kp-legend-inline">
+        <span><span class="kp-legend-dot" style="background:var(--visited)"></span>K&auml;yty</span>
+        <span><span class="kp-legend-dot" style="background:var(--unvisited)"></span>Ei</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="kp-main">
+    <div id="map"></div>
+
+    <div class="kp-themes" id="swatchesMain"></div>
+
+    <div class="kp-legend">
+      <div><span class="kp-legend-dot lg" style="background:var(--visited)"></span>K&auml;yty</div>
+      <div><span class="kp-legend-dot lg" style="background:var(--unvisited)"></span>Ei k&auml;yty</div>
+    </div>
+
+    <div id="detailCard" class="kp-detail" hidden></div>
+  </main>
+
+  <div id="authModal" class="kp-modal-overlay" hidden>
+    <div class="kp-modal">
+      <div class="kp-modal-head">
+        <div class="kp-brand">
+          <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true">
+            <polygon points="15,3 22,15 8,15" fill="var(--accent)"></polygon>
+            <polygon points="15,10 24,24 6,24" fill="var(--accent)"></polygon>
+            <rect x="13.5" y="23" width="3" height="5" fill="#8a6d4b"></rect>
+          </svg>
+          <div class="kp-modal-title">Kirjaudu sis&auml;&auml;n</div>
+        </div>
+        <p class="kp-modal-desc">Puistojen k&auml;yty-merkinn&auml;t voi tehd&auml; vain kirjautuneena.</p>
+      </div>
+      <div class="kp-modal-body">
+        <label class="kp-label">K&auml;ytt&auml;j&auml;tunnus
+          <input id="authUser" class="kp-input" autocomplete="username" placeholder="retkeilija">
+        </label>
+        <label class="kp-label">Salasana
+          <input id="authPass" class="kp-input" type="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
+        </label>
+        <div id="authError" class="kp-error" hidden></div>
+        <button id="authSubmit" class="kp-btn-primary">Kirjaudu</button>
+        <div class="kp-demo-note">Demo-tunnus &middot; k&auml;ytt&auml;j&auml; <b>retkeilija</b> &middot; salasana <b>metsa2026</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pwModal" class="kp-modal-overlay" hidden>
+    <div class="kp-modal">
+      <div class="kp-modal-head">
+        <div class="kp-modal-title">Vaihda salasana</div>
+        <p class="kp-modal-desc">Anna nykyinen salasanasi ja valitse uusi.</p>
+      </div>
+      <div class="kp-modal-body">
+        <label class="kp-label">Nykyinen salasana
+          <input id="pwCurrent" class="kp-input" type="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;">
+        </label>
+        <label class="kp-label">Uusi salasana
+          <input id="pwNew" class="kp-input" type="password" autocomplete="new-password" placeholder="v&auml;hint&auml;&auml;n 4 merkki&auml;">
+        </label>
+        <div id="pwError" class="kp-error" hidden></div>
+        <div id="pwSuccess" class="kp-success" hidden></div>
+        <div class="kp-modal-actions">
+          <button id="pwClose" class="kp-btn-secondary">Sulje</button>
+          <button id="pwSubmit" class="kp-btn-primary kp-flex1">Tallenna</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
